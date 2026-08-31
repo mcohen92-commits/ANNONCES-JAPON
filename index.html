@@ -145,7 +145,7 @@
   .fav-trash-bar button.active-heart { background: var(--vermillion); border-color: var(--vermillion); }
   .fav-trash-bar button.active-trash { background: var(--grey-flag); border-color: var(--grey-flag); }
   .fav-trash-bar button.active-seen { background: #2f7d4f; border-color: #2f7d4f; }
-  .card-top { padding-right: 66px; }
+  .card-top { padding-right: 46px; }
   .card-top {
     display: flex;
     justify-content: space-between;
@@ -405,6 +405,11 @@ function toggleTrash(n) {
 function toggleSeen(n) {
   setSeen(n, !SEEN[n]);
 }
+function markSeen(n) {
+  // Marque automatiquement l'annonce comme vue au clic sur son lien.
+  // Ne fait rien si déjà marquée vue (évite un appel de stockage inutile).
+  if (!SEEN[n]) setSeen(n, true);
+}
 
 function scoreColor(total) {
   if (total >= 60) return "#4a7a5c";
@@ -465,7 +470,6 @@ function render() {
     return `
       <div class="card ${flagged ? "flagged" : ""} ${excellent ? "excellent" : ""} ${st === "favorite" ? "is-fav" : ""} ${st === "trash" ? "is-trash" : ""} ${isSeen ? "is-seen" : ""}">
         <div class="fav-trash-bar">
-          <button class="${isSeen ? "active-seen" : ""}" title="Marquer comme vue/pas vue" onclick="toggleSeen(${r.n})">${isSeen ? "✓" : "👁"}</button>
           <button class="${st === "favorite" ? "active-heart" : ""}" title="Mettre en favori" onclick="toggleFavorite(${r.n})">❤️</button>
           <button class="${st === "trash" ? "active-trash" : ""}" title="Écarter cette annonce" onclick="toggleTrash(${r.n})">🗑️</button>
         </div>
@@ -499,7 +503,7 @@ function render() {
           <span>Risque sisme ${r.r_sism ?? "-"}/5</span>
         </div>
         <div class="actions">
-          ${r.lien ? `<a class="btn btn-primary" href="${r.lien}" target="_blank" rel="noopener">Voir l'annonce ↗</a>` : ""}
+          ${r.lien ? `<a class="btn btn-primary" href="${r.lien}" target="_blank" rel="noopener" onclick="markSeen(${r.n})">Voir l'annonce ↗</a>` : ""}
           ${r.gmaps ? `<a class="btn btn-secondary" href="${r.gmaps}" target="_blank" rel="noopener">Carte ↗</a>` : ""}
         </div>
         <details>
