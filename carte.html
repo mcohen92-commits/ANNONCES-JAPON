@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte des annonces - Japon</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<style>
+  :root {
+    --indigo: #2c4a5e;
+    --indigo-dark: #1a2f3d;
+    --vermillion: #b8462f;
+    --paper: #f6f2e9;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header {
+    background: var(--indigo-dark);
+    color: var(--paper);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { margin: 0; font-size: 1.1rem; }
+  header a {
+    color: var(--paper);
+    font-size: 0.82rem;
+    text-decoration: underline;
+  }
+  #map { position: absolute; top: 56px; bottom: 0; left: 0; right: 0; }
+  .pin-label {
+    background: #fffdf8;
+    border: 1px solid #d9d0bb;
+    border-radius: 8px;
+    padding: 3px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--indigo);
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .leaflet-popup-content { font-size: 0.85rem; line-height: 1.4; }
+  .popup-title { font-weight: 700; color: var(--indigo); margin-bottom: 4px; }
+  .popup-link {
+    display: inline-block;
+    margin-top: 6px;
+    background: var(--indigo);
+    color: #fff !important;
+    padding: 5px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗾 Carte des annonces immobilières</h1>
+  <a href="index.html">← Retour au tableau</a>
+</header>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+const DATA = [{"n": 1, "lat": 34.3985, "lon": 135.3095, "loc": "Osaka-fu, Izumisano-shi, Minato 2-chōme", "prix_eur": 53988, "surf": 80.19, "lien": "https://www.homes.co.jp/kodate/b-1149800001255/", "total": 72}, {"n": 2, "lat": 34.3795, "lon": 135.2945, "loc": "Osaka-fu, Izumisano-shi, Nagataki", "prix_eur": 55215, "surf": 81.4, "lien": "https://www.homes.co.jp/kodate/b-1215740002725/", "total": 66}, {"n": 3, "lat": 34.3975, "lon": 135.3175, "loc": "Osaka-fu, Izumisano-shi, Shimokawara 5-chōme", "prix_eur": 67485, "surf": 81.0, "lien": "https://www.homes.co.jp/kodate/b-88800005189/", "total": 65}, {"n": 4, "lat": 34.427, "lon": 135.3195, "loc": "Osaka-fu, Izumisano-shi, Hineno", "prix_eur": 52147, "surf": 81.0, "lien": "https://www.homes.co.jp/kodate/b-1529340000139/", "total": 64}, {"n": 5, "lat": 34.413, "lon": 135.3537, "loc": "Osaka-fu, Izumisano-shi, Izumigaoka 3-chōme", "prix_eur": 78528, "surf": 149.46, "lien": "https://www.homes.co.jp/kodate/b-1073230003150/", "total": 64}, {"n": 6, "lat": 34.985, "lon": 139.097, "loc": "Shizuoka-ken, Itō-shi, Usami", "prix_eur": 54479, "surf": 120.95, "lien": "https://ark-next.com/bukken-detail/753", "total": 63}, {"n": 7, "lat": 34.402, "lon": 135.313, "loc": "Osaka-fu, Izumisano-shi, Ichibanishi 1-chōme", "prix_eur": 49080, "surf": 85.05, "lien": "https://akiyaair.com/akiyas/68f032d2951e1400d2ce73f7", "total": 63}, {"n": 8, "lat": 34.4267, "lon": 135.3608, "loc": "Osaka-fu, Kaizuka-shi, Kitamachi", "prix_eur": 69325, "surf": null, "lien": "https://www.fudousan-takase.jp/shop/izumisano", "total": 62}, {"n": 9, "lat": 35.421, "lon": 139.96, "loc": "Chiba-ken, Sodegaura-shi, Nagaura-ekimae 2-chōme", "prix_eur": 66258, "surf": 91.23, "lien": "https://www.homes.co.jp/kodate/b-1386880000898/", "total": 61}, {"n": 10, "lat": 34.348, "lon": 135.228, "loc": "Osaka-fu, Hannan-shi, Ozaki-chō 2-chōme", "prix_eur": 47853, "surf": 195.58, "lien": "https://www.homes.co.jp/kodate/b-1537300000281/", "total": 61}, {"n": 11, "lat": 34.986, "lon": 135.778, "loc": "Kyoto-fu, Kyoto-shi, Higashiyama-ku, Sennyūji-yamauchi-chō", "prix_eur": 40859, "surf": 76.62, "lien": "https://www.homes.co.jp/kodate/b-1527370000223/", "total": 60}, {"n": 12, "lat": 34.355, "lon": 135.275, "loc": "Osaka-fu, Sennan-shi, Okada 3-chōme", "prix_eur": 9202, "surf": null, "lien": "https://www.fudousan-takase.jp/shop/izumisano", "total": 60}, {"n": 13, "lat": 34.545, "lon": 133.765, "loc": "Okayama-ken, Kurashiki-shi, Nakaune 3-chōme", "prix_eur": 78528, "surf": 102.65, "lien": "https://www.homes.co.jp/kodate/b-1520780000122/", "total": 59}, {"n": 14, "lat": 34.36, "lon": 135.265, "loc": "Osaka-fu, Hannan-shi, Shizenda", "prix_eur": 42822, "surf": 107.73, "lien": "https://www.homes.co.jp/kodate/b-1576800000043/", "total": 57}, {"n": 15, "lat": 34.461, "lon": 135.3705, "loc": "Osaka-fu, Kishiwada-shi, Minami-machi 1-chōme", "prix_eur": 33129, "surf": 66.54, "lien": "https://www.homes.co.jp/kodate/b-1019300015864/", "total": 57}, {"n": 16, "lat": 34.475, "lon": 133.804, "loc": "Okayama-ken, Kurashiki-shi, Kojima Motohama-chō", "prix_eur": 46012, "surf": 118.49, "lien": "https://www.homes.co.jp/kodate/b-1425340001315/", "total": 57}, {"n": 17, "lat": 34.51, "lon": 133.81, "loc": "Okayama-ken, Kurashiki-shi, Fukuda-chō Urada", "prix_eur": 42945, "surf": 113.35, "lien": "https://www.homes.co.jp/kodate/b-1573490000096/", "total": 54}, {"n": 18, "lat": 34.628, "lon": 135.035, "loc": "Hyōgo-ken, Kōbe-shi, Tarumi-ku, Asahigaoka 3-chōme", "prix_eur": 60123, "surf": 75.42, "lien": "https://www.homes.co.jp/kodate/b-1471780002161/", "total": 53}, {"n": 19, "lat": 34.982, "lon": 135.822, "loc": "Kyoto-fu, Kyoto-shi, Yamashina-ku, Nagitsuji-Higashiura-chō", "prix_eur": 60123, "surf": 66.0, "lien": "https://www.homes.co.jp/kodate/b-1419900006959/", "total": 51}, {"n": 20, "lat": 34.445, "lon": 135.382, "loc": "Osaka-fu, Kishiwada-shi, Kamori-chō 4-chōme", "prix_eur": 35583, "surf": 69.25, "lien": "https://www.homes.co.jp/kodate/b-88800005165/", "total": 51}, {"n": 21, "lat": 34.226, "lon": 135.209, "loc": "Wakayama-ken, Wakayama-shi, Furuya", "prix_eur": 30675, "surf": 72.04, "lien": "https://www.homes.co.jp/akiyabank/b-24784/", "total": 50}, {"n": 22, "lat": 34.395, "lon": 135.361, "loc": "Osaka-fu, Sennan-gun, Kumatori-chō, Nanayama 2-chōme", "prix_eur": 41718, "surf": 95.12, "lien": "https://myhome.nifty.com/chuko-ikkodate/osaka/sennangunkumatoricho_ct/detail_917f2d3196e9358e813ae451b42e8723/", "total": 50}, {"n": 23, "lat": 34.618, "lon": 135.028, "loc": "Hyōgo-ken, Kōbe-shi, Tarumi-ku, Maikozaka 2-chōme", "prix_eur": 53988, "surf": 94.39, "lien": "https://www.homes.co.jp/kodate/b-1471780001614/", "total": 50}, {"n": 24, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Nomachi 4-chōme", "prix_eur": 36810, "surf": 79.33, "lien": "https://www.homes.co.jp/kodate/b-1300360001246/", "total": 50}, {"n": 25, "lat": 34.455, "lon": 135.369, "loc": "Osaka-fu, Kishiwada-shi, Isogami-chō 5-chōme", "prix_eur": 41718, "surf": 81.14, "lien": "https://www.homes.co.jp/kodate/b-89810003972/", "total": 49}, {"n": 26, "lat": 34.34, "lon": 135.25, "loc": "Osaka-fu, Hannan-shi, Tottori-Mii", "prix_eur": 32515, "surf": 81.29, "lien": "https://www.homes.co.jp/kodate/b-1149800001143/", "total": 48}, {"n": 27, "lat": 34.345, "lon": 135.232, "loc": "Osaka-fu, Hannan-shi, Ozaki-chō 5-chōme", "prix_eur": 33742, "surf": 88.29, "lien": "https://www.homes.co.jp/kodate/b-1529340000094/", "total": 48}, {"n": 28, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Yamanoue-machi", "prix_eur": 30675, "surf": 202.23, "lien": "https://www.homes.co.jp/kodate/b-1526150000029/", "total": 48}, {"n": 29, "lat": 34.427, "lon": 135.3195, "loc": "Osaka-fu, Izumisano-shi, Hineno", "prix_eur": 67485, "surf": 220.5, "lien": "https://www.homes.co.jp/kodate/b-1149800001280/", "total": 48}, {"n": 30, "lat": 34.3975, "lon": 135.3175, "loc": "Osaka-fu, Izumisano-shi, Shimokawara 1-chōme", "prix_eur": 35583, "surf": 58.32, "lien": "https://www.homes.co.jp/kodate/b-88800005136/", "total": 45}, {"n": 31, "lat": 34.365, "lon": 135.29, "loc": "Osaka-fu, Sennan-shi, Shindachiichiba", "prix_eur": 47853, "surf": 78.57, "lien": "https://akiyaair.com/akiyas/6a048062060ba69e98e45110/", "total": 45}, {"n": 32, "lat": 34.463, "lon": 135.373, "loc": "Osaka-fu, Kishiwada-shi, Matsukaze-chō", "prix_eur": 41718, "surf": null, "lien": "https://www.fudousan-takase.jp/shop/izumisano", "total": 44}, {"n": 33, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Kosaka-machi U", "prix_eur": 48466, "surf": 156.23, "lien": "https://www.homes.co.jp/kodate/b-1421720000682/", "total": 44}, {"n": 34, "lat": 34.52, "lon": 133.735, "loc": "Okayama-ken, Kurashiki-shi, Tamashima Kurosaki", "prix_eur": 19632, "surf": 120.25, "lien": "https://www.homes.co.jp/kodate/b-1542860000171/", "total": 44}, {"n": 35, "lat": 34.4089, "lon": 133.205, "loc": "Hiroshima-ken, Onomichi-shi, Kurihara-chō", "prix_eur": 30675, "surf": 51.64, "lien": "https://www.homes.co.jp/kodate/b-32130990000008/", "total": 43}, {"n": 36, "lat": 35.7217, "lon": 139.9298, "loc": "Chiba-ken, Ichikawa-shi, Ozu 3-chōme", "prix_eur": 72393, "surf": 70.69, "lien": "https://akiyaair.com/akiyas/6a87b10057956435332ebfa9/", "total": 42}, {"n": 37, "lat": 35.515, "lon": 136.25, "loc": "Shiga-ken, Nagahama-shi, Kinomoto-chō Kinomoto", "prix_eur": 39877, "surf": 118.21, "lien": "https://www.homes.co.jp/kodate/b-1014030009067/", "total": 42}, {"n": 38, "lat": 34.96, "lon": 139.089, "loc": "Shizuoka-ken, Itō-shi, Monomigaoka", "prix_eur": 24540, "surf": 102.67, "lien": "https://ark-next.com/bukken-detail/686", "total": 41}, {"n": 39, "lat": 34.595, "lon": 133.77, "loc": "Okayama-ken, Kurashiki-shi, Hakuraku-chō", "prix_eur": 58896, "surf": 89.59, "lien": "https://www.homes.co.jp/kodate/b-32282330000439/", "total": 41}, {"n": 40, "lat": 36.588, "lon": 136.615, "loc": "Ishikawa-ken, Kanazawa-shi, Kanaiwa-Higashi 1-chōme", "prix_eur": 60123, "surf": 127.95, "lien": "https://www.homes.co.jp/kodate/b-1421720001911/", "total": 41}, {"n": 41, "lat": 36.588, "lon": 136.615, "loc": "Ishikawa-ken, Kanazawa-shi, Kanaiwa-Kaizenji-machi", "prix_eur": 36810, "surf": 146.47, "lien": "https://www.homes.co.jp/kodate/b-1300360001236/", "total": 41}, {"n": 42, "lat": 36.1461, "lon": 137.2521, "loc": "Gifu-ken, Takayama-shi, Yaken-machi", "prix_eur": 24540, "surf": 59.05, "lien": "https://www.hinatafudosan.com/bkndetail/1792672103/room107049146/", "total": 40}, {"n": 43, "lat": 33.917, "lon": 135.108, "loc": "Wakayama-ken, Hidaka-gun, Yura-chō, Ena", "prix_eur": 47853, "surf": 40.57, "lien": "https://sml-estate.com/?post_type=fudo&p=25952", "total": 39}, {"n": 44, "lat": 34.52, "lon": 133.735, "loc": "Okayama-ken, Kurashiki-shi, Tamashima Kurosaki", "prix_eur": 49080, "surf": 110.95, "lien": "https://www.homes.co.jp/kodate/b-37021950000163/", "total": 39}, {"n": 45, "lat": 34.535, "lon": 133.73, "loc": "Okayama-ken, Kurashiki-shi, Tsurushima-chō Tsurushinden", "prix_eur": 73006, "surf": 92.73, "lien": "https://www.homes.co.jp/kodate/b-1520780000053/", "total": 39}, {"n": 46, "lat": 34.62, "lon": 133.81, "loc": "Okayama-ken, Kurashiki-shi, Nakashō", "prix_eur": 82822, "surf": 132.23, "lien": "https://www.homes.co.jp/kodate/b-1425340001313/", "total": 39}, {"n": 47, "lat": 34.505, "lon": 133.75, "loc": "Okayama-ken, Kurashiki-shi, Tamashima Otsushima", "prix_eur": 84601, "surf": 111.48, "lien": "https://www.homes.co.jp/kodate/b-1220530000766/", "total": 36}, {"n": 48, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Kamiyachi-machi Aoi", "prix_eur": 46012, "surf": 82.08, "lien": "https://www.homes.co.jp/kodate/b-1421720001432/", "total": 36}, {"n": 49, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Wakamatsu-chō 2-chōme", "prix_eur": 66871, "surf": 138.6, "lien": "https://www.homes.co.jp/kodate/b-1421720001651/", "total": 35}, {"n": 50, "lat": 33.7833, "lon": 130.7167, "loc": "Fukuoka-ken, Kurate-machi, Ninobu", "prix_eur": 36196, "surf": 107.48, "lien": "https://akiyaair.com/akiyas/69ee0032c71c4016135c7be7/", "total": 33}, {"n": 51, "lat": 34.305, "lon": 133.19, "loc": "Hiroshima-ken, Onomichi-shi, Innoshima Sanshō-chō", "prix_eur": 29448, "surf": 105.58, "lien": "https://www.homes.co.jp/kodate/b-32126380000156/", "total": 33}, {"n": 52, "lat": 34.97, "lon": 139.085, "loc": "Shizuoka-ken, Itō-shi, Oka", "prix_eur": 47853, "surf": 87.34, "lien": "https://akiyaair.com/akiyas/6a047bd2060ba69e98e4499b/", "total": 32}, {"n": 53, "lat": 33.7167, "lon": 130.7167, "loc": "Fukuoka-ken, Kama-shi, Kamiusui", "prix_eur": 29448, "surf": 92.36, "lien": "https://akiyaair.com/akiyas/6a32a5550207284a253360bd/", "total": 32}, {"n": 54, "lat": 33.75, "lon": 130.65, "loc": "Fukuoka-ken, Miyawaka-shi, Ryūtoku", "prix_eur": 60123, "surf": 131.36, "lien": "https://akiyaair.com/akiyas/68f03f6b951e1400d2cea88f/", "total": 32}, {"n": 55, "lat": 33.6497, "lon": 130.6912, "loc": "Fukuoka-ken, Iizuka-shi, Tateiwa", "prix_eur": 73620, "surf": 75.81, "lien": "https://akiyaair.com/akiyas/6875f4b9d4f19ac3c3d89629/", "total": 32}, {"n": 56, "lat": 34.617, "lon": 138.817, "loc": "Shizuoka-ken, Kamo-gun, Minami-Izu-cho, Ihama", "prix_eur": 30675, "surf": 114.94, "lien": "https://www.homes.co.jp/kodate/b-33308440000207/", "total": 32}, {"n": 57, "lat": 36.5613, "lon": 136.6562, "loc": "Ishikawa-ken, Kanazawa-shi, Tsutsujigaoka", "prix_eur": 60123, "surf": 149.04, "lien": "https://www.homes.co.jp/kodate/b-1300360001339/", "total": 32}, {"n": 58, "lat": 33.8834, "lon": 130.8752, "loc": "Fukuoka-ken, Kitakyūshū-shi, Yahatanishi-ku, Einomaru-Nishimachi", "prix_eur": 54601, "surf": 71.5, "lien": "https://akiyaair.com/akiyas/6a7ab665b2ee89b92bb07273/", "total": 31}, {"n": 59, "lat": 33.85, "lon": 130.75, "loc": "Fukuoka-ken, Mizumaki-machi, Futanishi", "prix_eur": 79141, "surf": 140.35, "lien": "https://akiyaair.com/akiyas/6a523f87effa6842b062149d/", "total": 31}, {"n": 60, "lat": 36.3486, "lon": 138.6353, "loc": "Nagano-ken, Kitasaku-gun, Karuizawa-machi", "prix_eur": 73620, "surf": 200.45, "lien": "https://akiyaair.com/akiyas/6a7aa424b2ee89b92bb059af/", "total": 31}, {"n": 61, "lat": 34.7967, "lon": 133.6167, "loc": "Okayama-ken, Takahashi-shi, Kose-chō", "prix_eur": 30061, "surf": 254.52, "lien": "https://www.homes.co.jp/kodate/b-1478870000196/", "total": 31}, {"n": 62, "lat": 34.34, "lon": 133.16, "loc": "Hiroshima-ken, Onomichi-shi, Urasaki-chō", "prix_eur": 18405, "surf": 90.99, "lien": "https://www.homes.co.jp/kodate/b-1461090000814/", "total": 31}, {"n": 63, "lat": 34.34, "lon": 133.16, "loc": "Hiroshima-ken, Onomichi-shi, Urasaki-chō", "prix_eur": 15337, "surf": 145.26, "lien": "https://www.homes.co.jp/kodate/b-32134750000002/", "total": 31}, {"n": 64, "lat": 34.385, "lon": 133.19, "loc": "Hiroshima-ken, Onomichi-shi, Mukaishima-chō", "prix_eur": 15337, "surf": 78.03, "lien": "https://www.homes.co.jp/kodate/b-1461090000894/", "total": 31}, {"n": 65, "lat": 33.5714, "lon": 130.1958, "loc": "Fukuoka-ken, Itoshima-shi, Shimafunakoshi", "prix_eur": 61350, "surf": 151.82, "lien": "https://akiyaair.com/akiyas/6a7d263495530288f9847390/", "total": 29}, {"n": 66, "lat": 34.4089, "lon": 133.205, "loc": "Hiroshima-ken, Onomichi-shi, Kuribara-Higashi 1-chōme", "prix_eur": 27607, "surf": 137.05, "lien": "https://www.homes.co.jp/kodate/b-32126380000152/", "total": 29}, {"n": 67, "lat": 35.36, "lon": 136.25, "loc": "Shiga-ken, Nagahama-shi, Gōno-chō", "prix_eur": 48466, "surf": 78.56, "lien": "https://akiyaair.com/akiyas/69e99457d408b5f74e5a4639", "total": 28}, {"n": 68, "lat": 34.405, "lon": 133.215, "loc": "Hiroshima-ken, Onomichi-shi, Mukōtō-chō", "prix_eur": 18282, "surf": 96.39, "lien": "https://www.homes.co.jp/kodate/b-1461090000892/", "total": 28}, {"n": 69, "lat": 34.32, "lon": 133.175, "loc": "Hiroshima-ken, Onomichi-shi, Momoshima-chō", "prix_eur": 9202, "surf": 131.82, "lien": "https://www.homes.co.jp/kodate/b-32123320000094/", "total": 27}, {"n": 70, "lat": 35.05, "lon": 134.9, "loc": "Hyōgo-ken, Taka-gun, Taka-chō, Naka-ku Kōgaya", "prix_eur": 90798, "surf": 187.59, "lien": "https://www.homes.co.jp/kodate/b-1486710000508/", "total": 27}, {"n": 71, "lat": 34.503, "lon": 134.85, "loc": "Hyōgo-ken, Awaji-shi, Osaki", "prix_eur": 67485, "surf": 85.86, "lien": "https://sml-estate.com/?post_type=fudo&p=24160", "total": 26}, {"n": 72, "lat": 35.475, "lon": 135.325, "loc": "Kyoto-fu, Maizuru-shi, Shirasugi", "prix_eur": 54601, "surf": 152.82, "lien": "https://www.athome.co.jp/kodate/6991392510/", "total": 24}, {"n": 73, "lat": 34.485, "lon": 136.845, "loc": "Mie-ken, Toba-shi, Ishikagami-chō", "prix_eur": 51534, "surf": 46.0, "lien": "https://sml-estate.com/?post_type=fudo&p=32985", "total": 24}, {"n": 74, "lat": 35.1467, "lon": 140.3214, "loc": "Chiba-ken, Katsuura-shi, Kawazu", "prix_eur": 18405, "surf": 53.71, "lien": "https://www.homes.co.jp/akiyabank/b-38456/", "total": 23}, {"n": 75, "lat": 36.2381, "lon": 137.972, "loc": "Nagano-ken, Matsumoto-shi, Hata", "prix_eur": 49018, "surf": 142.94, "lien": "https://www.homes.co.jp/kodate/b-1220280000518/", "total": 20}, {"n": 76, "lat": 34.485, "lon": 136.845, "loc": "Mie-ken, Toba-shi, Ishikagami-chō", "prix_eur": 41718, "surf": null, "lien": "https://sml-estate.com/?post_type=fudo&p=32533", "total": 18}];
+
+const map = L.map('map').setView([36.2, 138.0], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+function scoreColor(total) {
+  if (total >= 60) return "#4a7a5c";
+  if (total >= 45) return "#c98a3a";
+  if (total >= 25) return "#b8462f";
+  return "#8a8a86";
+}
+
+const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
+
+DATA.forEach(r => {
+  const col = scoreColor(r.total || 0);
+  const priceLabel = r.prix_eur ? (r.prix_eur.toLocaleString("fr-FR") + " €") : "?";
+  const surfLabel = r.surf ? (r.surf + " m²") : "?";
+
+  const icon = L.divIcon({
+    className: "",
+    html: `<div style="background:${col};color:#fff;border:2px solid #fff;border-radius:50%;
+                        width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+                        font-size:0.72rem;font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,0.35);">${r.n}</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+
+  const marker = L.marker([r.lat, r.lon], { icon: icon });
+
+  marker.bindTooltip(`${priceLabel} / ${surfLabel}`, {
+    permanent: false,
+    direction: "top",
+    offset: [0, -12],
+    className: "pin-label"
+  });
+
+  marker.bindPopup(`
+    <div class="popup-title">Bien n°${r.n} — Score ${r.total}/100</div>
+    <div>${r.loc}</div>
+    <div style="margin-top:4px;"><strong>${priceLabel}</strong> · ${surfLabel}</div>
+    <a class="popup-link" href="${r.lien}" target="_blank" rel="noopener">Voir l'annonce ↗</a>
+  `);
+
+  clusterGroup.addLayer(marker);
+});
+
+map.addLayer(clusterGroup);
+</script>
+
+</body>
+</html>
