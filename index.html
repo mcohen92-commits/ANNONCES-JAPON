@@ -331,6 +331,7 @@ function chooseIdentity(id) {
   CURRENT_IDENTITY = id;
   try { localStorage.setItem("jp_akiya_identity", id); } catch (e) {}
   render();
+  if (ratingsReady) migrateOldFavorites();
 }
 loadIdentity();
 
@@ -364,6 +365,7 @@ async function loadBin() {
   }
   ratingsReady = true;
   render();
+  await migrateOldFavorites();
 }
 
 async function saveBin() {
@@ -680,6 +682,44 @@ function render() {
   }).join("");
 }
 
+async function migrateOldFavorites() {
+  const flagKey = "jp_akiya_migrated_fav_v1";
+  let already = false;
+  try { already = localStorage.getItem(flagKey) === "1"; } catch (e) {}
+  if (already) return;
+
+  // Anciens favoris stockés localement avant la refonte nominative (valeur "favorite"
+  // dans le statut partagé d'origine, remplacé depuis par les favoris nominatifs).
+  const oldStatus = localGetAll(); // { n: "favorite" | "trash" }
+  const oldFavKeys = Object.keys(oldStatus).filter(n => oldStatus[n] === "favorite");
+
+  if (oldFavKeys.length === 0) {
+    try { localStorage.setItem(flagKey, "1"); } catch (e) {}
+    return;
+  }
+
+  if (!CURRENT_IDENTITY) {
+    // Impossible d'attribuer sans savoir qui : on prévient, mais on NE marque PAS
+    // comme migré pour réessayer automatiquement une fois l'identité choisie.
+    alert(`${oldFavKeys.length} ancien(s) favori(s) retrouvé(s) dans ce navigateur ! Choisis "Michael" ou "Céline" en haut de la page pour les récupérer.`);
+    return;
+  }
+
+  let changed = false;
+  for (const n of oldFavKeys) {
+    if (!FAVORITES_RAW[n]) FAVORITES_RAW[n] = [];
+    if (!FAVORITES_RAW[n].includes(CURRENT_IDENTITY)) {
+      FAVORITES_RAW[n].push(CURRENT_IDENTITY);
+      changed = true;
+    }
+  }
+  try { localStorage.setItem(flagKey, "1"); } catch (e) {}
+  if (changed) {
+    render();
+    await saveBin();
+    alert(`${oldFavKeys.length} ancien(s) favori(s) récupéré(s) et attribué(s) à ${IDENTITY_LABELS[CURRENT_IDENTITY]} !`);
+  }
+}
 document.getElementById("search").addEventListener("input", render);
 document.getElementById("sortSel").addEventListener("change", render);
 document.getElementById("filterSel").addEventListener("change", render);
