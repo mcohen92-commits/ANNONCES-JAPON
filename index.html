@@ -533,6 +533,19 @@ function markSeen(n) {
   if (!SEEN[n]) setSeen(n, true);
 }
 
+async function reportDeadLink(n) {
+  const name = CURRENT_IDENTITY ? IDENTITY_LABELS[CURRENT_IDENTITY] : "quelqu'un";
+  if (!confirm(`Confirmer que le lien du bien n°${n} ne fonctionne pas ou que l'annonce a disparu ?`)) return;
+  try {
+    if (!RATINGS_RAW.__dead_links) RATINGS_RAW.__dead_links = {};
+    RATINGS_RAW.__dead_links[n] = { by: name, date: new Date().toISOString().slice(0,10) };
+    await saveBin();
+    alert("Merci, c'est signalé ! Ça remontera lors de la prochaine mise à jour du tableau.");
+  } catch (e) {
+    alert("Impossible d'enregistrer le signalement (problème réseau).");
+  }
+}
+
 function scoreColor(total) {
   if (total >= 60) return "#4a7a5c";
   if (total >= 45) return "#c98a3a";
@@ -656,6 +669,7 @@ function render() {
         <div class="actions">
           ${r.lien ? `<a class="btn btn-primary" href="${r.lien}" target="_blank" rel="noopener" onclick="markSeen(${r.n})">Voir l'annonce ↗</a>` : ""}
           ${r.gmaps ? `<a class="btn btn-secondary" href="${r.gmaps}" target="_blank" rel="noopener">Carte ↗</a>` : ""}
+          <button class="btn btn-secondary" style="border-color:#b8462f;color:#b8462f;" onclick="reportDeadLink(${r.n})" title="Le lien ne fonctionne pas ou l'annonce a disparu">🔗❌ Signaler</button>
         </div>
         <details>
           <summary>Détails complets du score</summary>
