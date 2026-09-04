@@ -277,6 +277,7 @@
     <button onclick="chooseIdentity('celine')" id="idBtnCeline" style="padding:4px 10px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:transparent; color:#fff; cursor:pointer; font-size:0.78rem;">Céline</button>
     <a href="carte.html" style="margin-left:auto; color:#fff; font-size:0.8rem; text-decoration:underline;">🗾 Voir la carte →</a>
   </div>
+  <div id="saveStatus" style="margin-top:4px; font-size:0.7rem; color:#9fb0ab;"></div>
 </header>
 
 <div class="controls">
@@ -354,7 +355,10 @@ const VISITOR_ID = getVisitorId();
 
 async function loadBin() {
   try {
-    const res = await fetch(JSONBIN_URL + "/latest", { headers: { "X-Access-Key": JSONBIN_KEY } });
+    const res = await fetch(JSONBIN_URL + "/latest?t=" + Date.now(), {
+      headers: { "X-Access-Key": JSONBIN_KEY, "Cache-Control": "no-cache" },
+      cache: "no-store"
+    });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     RATINGS_RAW = (data.record && data.record.ratings) || {};
@@ -383,6 +387,7 @@ function saveBin() {
 
 async function _doSaveBin() {
   const payload = JSON.stringify({ ratings: RATINGS_RAW, favorites: FAVORITES_RAW, trash: TRASH_RAW });
+  const expectedTrashCount = Object.keys(TRASH_RAW).length;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(JSONBIN_URL, {
@@ -391,16 +396,43 @@ async function _doSaveBin() {
         body: payload
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
-      return; // succès
+
+      // VÉRIFICATION : on relit immédiatement (anti-cache) pour confirmer que
+      // le serveur a bien pris en compte l'écriture, plutôt que de faire
+      // confiance à un simple "200 OK" qui peut mentir en cas de souci côté
+      // service (cache, latence de propagation, etc.)
+      const verifyRes = await fetch(JSONBIN_URL + "/latest?t=" + Date.now(), {
+        headers: { "X-Access-Key": JSONBIN_KEY, "Cache-Control": "no-cache" },
+        cache: "no-store"
+      });
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json();
+        const actualTrashCount = Object.keys((verifyData.record && verifyData.record.trash) || {}).length;
+        if (actualTrashCount !== expectedTrashCount) {
+          console.error("Incohérence après sauvegarde : attendu", expectedTrashCount, "trouvé", actualTrashCount);
+          throw new Error("Vérification post-sauvegarde échouée (incohérence de données)");
+        }
+      }
+      return setSaveStatus(true); // succès confirmé
     } catch (e) {
       console.error(`Échec sauvegarde (essai ${attempt}/3) :`, e);
       if (attempt === 3) {
-        alert("⚠️ Échec de l'enregistrement après 3 tentatives (problème réseau ou serveur). Ton dernier clic n'a PAS été sauvegardé — réessaie dans quelques instants.");
+        setSaveStatus(false);
+        alert("⚠️ Échec de l'enregistrement après 3 tentatives, MÊME APRÈS VÉRIFICATION (problème réseau ou serveur jsonbin). Ton dernier clic n'a PAS été sauvegardé de façon fiable — réessaie dans quelques instants, et signale-le si ça persiste.");
+        return;
       } else {
         await new Promise(r => setTimeout(r, 500 * attempt)); // petit délai avant retry
       }
     }
   }
+}
+
+function setSaveStatus(ok) {
+  const el = document.getElementById("saveStatus");
+  if (!el) return;
+  const now = new Date().toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+  el.textContent = ok ? `✓ Dernière sauvegarde réussie (${now}, vérifiée)` : `✗ ÉCHEC de la dernière sauvegarde (${now})`;
+  el.style.color = ok ? "#8fd4a8" : "#ff9b8a";
 }
 
 function ratingStats(n) {
