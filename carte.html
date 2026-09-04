@@ -67,6 +67,7 @@
     <input type="checkbox" id="favOnlyToggle" style="width:auto;">
     ❤️ Favoris uniquement
   </label>
+  <span style="font-size:0.72rem; color:#cdd8d4;">(🗑️ les annonces écartées ne sont jamais affichées ici)</span>
   <a href="index.html">← Retour au tableau</a>
 </header>
 
@@ -97,12 +98,14 @@ function scoreColor(total) {
 
 const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 let favoritesData = {};
+let trashData = {};
 
 function renderMarkers() {
   clusterGroup.clearLayers();
   const onlyFavs = document.getElementById("favOnlyToggle").checked;
 
   DATA.forEach(r => {
+    if (trashData[r.id]) return; // annonces écartées TOUJOURS exclues de la carte
     const favs = favoritesData[r.id] || [];
     if (onlyFavs && favs.length === 0) return;
 
@@ -151,9 +154,11 @@ async function loadFavorites() {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     favoritesData = (data.record && data.record.favorites) || {};
+    trashData = (data.record && data.record.trash) || {};
   } catch (e) {
-    console.warn("Impossible de charger les favoris partagés :", e);
+    console.warn("Impossible de charger les favoris/écartés partagés :", e);
     favoritesData = {};
+    trashData = {};
   }
   renderMarkers();
 }
