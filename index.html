@@ -317,6 +317,7 @@ const STATUS = {}; // n -> "trash" (l'écarté reste un statut partagé unique, 
 const SEEN = {}; // n -> true si déjà consultée
 let RATINGS_RAW = {}; // { "n": { visitorId: note(1-5) } }
 let FAVORITES_RAW = {}; // { "n": ["michael", "celine"] } — favoris nominatifs partagés
+let TRASH_RAW = {}; // { "id": true } — annonces écartées, statut unique partagé (pas nominatif)
 let ratingsReady = false;
 let storageReady = false;
 const HAS_SHARED_STORAGE = (typeof window.storage !== "undefined" && window.storage !== null);
@@ -358,10 +359,12 @@ async function loadBin() {
     const data = await res.json();
     RATINGS_RAW = (data.record && data.record.ratings) || {};
     FAVORITES_RAW = (data.record && data.record.favorites) || {};
+    TRASH_RAW = (data.record && data.record.trash) || {};
   } catch (e) {
     console.warn("Impossible de charger les données partagées (jsonbin) :", e);
     RATINGS_RAW = {};
     FAVORITES_RAW = {};
+    TRASH_RAW = {};
   }
   ratingsReady = true;
   render();
@@ -373,7 +376,7 @@ async function saveBin() {
     await fetch(JSONBIN_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-Access-Key": JSONBIN_KEY },
-      body: JSON.stringify({ ratings: RATINGS_RAW, favorites: FAVORITES_RAW })
+      body: JSON.stringify({ ratings: RATINGS_RAW, favorites: FAVORITES_RAW, trash: TRASH_RAW })
     });
   } catch (e) {
     console.error("Impossible d'enregistrer :", e);
@@ -522,9 +525,13 @@ async function setSeen(n, value) {
   render();
 }
 
-function toggleTrash(n) {
-  const cur = STATUS[n];
-  setStatus(n, cur === "trash" ? null : "trash");
+function isTrashed(id) {
+  return !!TRASH_RAW[id];
+}
+async function toggleTrash(n) {
+  if (TRASH_RAW[n]) delete TRASH_RAW[n]; else TRASH_RAW[n] = true;
+  render();
+  await saveBin();
 }
 function toggleSeen(n) {
   setSeen(n, !SEEN[n]);
@@ -575,8 +582,7 @@ function render() {
   const showTrash = document.getElementById("showTrash").checked;
 
   let rows = DATA.filter(r => {
-    const st = STATUS[r.id];
-    if (st === "trash" && !showTrash && filterMode !== "favorites") return false;
+    if (isTrashed(r.id) && !showTrash && filterMode !== "favorites") return false;
     if (q && !(r.loc || "").toLowerCase().includes(q) && !(r.resume || "").toLowerCase().includes(q)) return false;
     if (filterMode === "verified" && isFlagged(r)) return false;
     if (filterMode === "flagged" && !isFlagged(r)) return false;
@@ -611,7 +617,7 @@ function render() {
   const container = document.getElementById("cards");
   container.innerHTML = rows.map(r => {
     const flagged = isFlagged(r);
-    const st = STATUS[r.id];
+    const trashed = isTrashed(r.id);
     const isSeen = !!SEEN[r.id];
     const favs = favoritesFor(r.id);
     const isFavByMe = CURRENT_IDENTITY && favs.includes(CURRENT_IDENTITY);
@@ -631,10 +637,10 @@ function render() {
       return `<span style="font-size:0.68rem; padding:2px 8px; border-radius:10px; margin-right:4px; ${active ? "background:#fbe9e7;color:#b8462f;font-weight:700;" : "background:#eee;color:#999;"}">❤ ${IDENTITY_LABELS[id]}</span>`;
     }).join("");
     return `
-      <div class="card ${flagged ? "flagged" : ""} ${excellent ? "excellent" : ""} ${favs.length ? "is-fav" : ""} ${st === "trash" ? "is-trash" : ""} ${isSeen ? "is-seen" : ""}">
+      <div class="card ${flagged ? "flagged" : ""} ${excellent ? "excellent" : ""} ${favs.length ? "is-fav" : ""} ${trashed ? "is-trash" : ""} ${isSeen ? "is-seen" : ""}">
         <div class="fav-trash-bar">
           <button class="${isFavByMe ? "active-heart" : ""}" title="Mettre en favori (${CURRENT_IDENTITY ? IDENTITY_LABELS[CURRENT_IDENTITY] : "choisis ton identité"})" onclick="toggleFavoritePerson('${r.id}')">❤️</button>
-          <button class="${st === "trash" ? "active-trash" : ""}" title="Écarter cette annonce" onclick="toggleTrash('${r.id}')">🗑️</button>
+          <button class="${trashed ? "active-trash" : ""}" title="Écarter cette annonce" onclick="toggleTrash('${r.id}')">🗑️</button>
         </div>
         <div class="card-top">
           <div>
@@ -656,7 +662,7 @@ function render() {
           <span class="rating-summary">${rs.count > 0 ? `<strong>${rs.avg.toFixed(1)}/5</strong> (${rs.count} avis)` : "Pas encore noté — sois le premier"}</span>
         </div>
         ${flagged ? `<div class="flag-note">⚠️ Voir détails — non vérifié / hors budget / hors zone</div>` : ""}
-        ${st === "trash" ? `<div class="flag-note" style="color:#8a8a86;">🗑️ Écarté</div>` : ""}
+        ${trashed ? `<div class="flag-note" style="color:#8a8a86;">🗑️ Écarté</div>` : ""}
         <div class="resume">${r.resume || ""}</div>
         <div class="subscores">
           <div class="subscore"><div class="lbl">Gare</div><div class="val">${r.s_gare ?? "-"}/30</div></div>
